@@ -12,8 +12,20 @@ interface Owner {
 export default function OwnersPage() {
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOwnerForm, setShowOwnerForm] = useState(false);
+
+  const [ownerForm, setOwnerForm] = useState({
+    name: "",
+    address: "",
+    photo: "",
+    birthday: "",
+  });
 
   useEffect(() => {
+    fetchOwners();
+  }, []);
+
+  const fetchOwners = () => {
     axios
       .get<Owner[]>("http://localhost:5001/api/Owners")
       .then((res) => {
@@ -24,7 +36,28 @@ export default function OwnersPage() {
         console.error("Error fetching owners:", err);
         setLoading(false);
       });
-  }, []);
+  };
+
+  const handleOwnerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    axios
+      .post("http://localhost:5001/api/Owners", {
+        ...ownerForm,
+        birthday: new Date(ownerForm.birthday).toISOString(),
+      })
+      .then(() => {
+        alert("Owner created successfully");
+        setOwnerForm({
+          name: "",
+          address: "",
+          photo: "",
+          birthday: "",
+        });
+        setShowOwnerForm(false);
+        fetchOwners();
+      })
+      .catch((err) => alert("Error creating owner: " + err.message));
+  };
 
   if (loading) {
     return (
@@ -66,6 +99,71 @@ export default function OwnersPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Action Button */}
+        <div className="mt-10">
+          <button
+            onClick={() => setShowOwnerForm((prev) => !prev)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            ➕ Add Owner
+          </button>
+        </div>
+
+        {/* Owner Form */}
+        {showOwnerForm && (
+          <form
+            onSubmit={handleOwnerSubmit}
+            className="mt-6 bg-white shadow-md rounded-lg p-6 space-y-4"
+          >
+            <input
+              type="text"
+              placeholder="Name"
+              className="border p-2 w-full rounded"
+              value={ownerForm.name}
+              onChange={(e) =>
+                setOwnerForm({ ...ownerForm, name: e.target.value })
+              }
+              required
+            />
+            <input
+              type="text"
+              placeholder="Address"
+              className="border p-2 w-full rounded"
+              value={ownerForm.address}
+              onChange={(e) =>
+                setOwnerForm({ ...ownerForm, address: e.target.value })
+              }
+              required
+            />
+            <input
+              type="text"
+              placeholder="Photo URL"
+              className="border p-2 w-full rounded"
+              value={ownerForm.photo}
+              onChange={(e) =>
+                setOwnerForm({ ...ownerForm, photo: e.target.value })
+              }
+              required
+            />
+            <input
+              type="date"
+              placeholder="Birthday"
+              className="border p-2 w-full rounded"
+              value={ownerForm.birthday}
+              onChange={(e) =>
+                setOwnerForm({ ...ownerForm, birthday: e.target.value })
+              }
+              required
+            />
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Save Owner
+            </button>
+          </form>
         )}
       </div>
     </div>
