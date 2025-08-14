@@ -53,6 +53,15 @@ export default function OwnersPage() {
       .catch((err) => alert("Error creating owner: " + err.message));
   };
 
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 5);
+  };
+
   if (loading) {
     return (
       <div className="p-6 text-center text-gray-500">Loading owners...</div>
@@ -98,7 +107,10 @@ export default function OwnersPage() {
         {/* Action Button */}
         <div className="mt-10">
           <button
-            onClick={() => setShowOwnerForm((prev) => !prev)}
+            onClick={() => {
+              setShowOwnerForm((prev) => !prev);
+              scrollToBottom();
+            }}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
           >
             ➕ Add Owner

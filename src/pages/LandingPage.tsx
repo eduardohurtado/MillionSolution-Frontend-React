@@ -115,6 +115,15 @@ export default function LandingPage() {
       .catch((err) => alert("Error adding image: " + err.message));
   };
 
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 5);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-lg font-semibold text-gray-500">
@@ -201,13 +210,19 @@ export default function LandingPage() {
         {/* Action Buttons */}
         <div className="mt-10 flex gap-4">
           <button
-            onClick={() => setShowPropertyForm((prev) => !prev)}
+            onClick={() => {
+              setShowPropertyForm((prev) => !prev);
+              scrollToBottom();
+            }}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
           >
             ➕ Add Property
           </button>
           <button
-            onClick={() => setShowImageForm((prev) => !prev)}
+            onClick={() => {
+              setShowImageForm((prev) => !prev);
+              scrollToBottom();
+            }}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             🖼 Add Property Image
