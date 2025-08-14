@@ -55,6 +55,9 @@ export default function OwnersPage() {
                   <h2 className="text-xl font-semibold text-gray-800">
                     {owner.name}
                   </h2>
+                  <p className="text-gray-500 text-xs mb-2">
+                    <span className="font-semibold">ID:</span> {owner.id}
+                  </p>
                   <p className="text-gray-600">{owner.address}</p>
                   <p className="text-gray-500 text-sm">
                     Birthday: {new Date(owner.birthday).toLocaleDateString()}

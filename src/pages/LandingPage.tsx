@@ -15,41 +15,42 @@ interface Property {
 interface PropertyImage {
   id: string;
   idProperty: string;
-  file: string; // URL or base64
+  file: string;
   enabled: boolean;
 }
 
-const LandingPage: React.FC = () => {
+export default function LandingPage() {
   const [properties, setProperties] = useState<Property[]>([]);
-  const [images, setImages] = useState<Record<string, PropertyImage[]>>({});
+  const [propertyImages, setPropertyImages] = useState<
+    Record<string, PropertyImage[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    axios
-      .get<Property[]>("http://localhost:5001/api/properties")
-      .then((res) => {
-        setProperties(res.data);
+  const [showPropertyForm, setShowPropertyForm] = useState(false);
+  const [showImageForm, setShowImageForm] = useState(false);
 
-        // Fetch images for each property
-        res.data.forEach((property) => {
-          axios
-            .get<PropertyImage[]>(
-              `http://localhost:5001/api/PropertyImages/property/${property.id}`
-            )
-            .then((imgRes) => {
-              setImages((prev) => ({
-                ...prev,
-                [property.id]: imgRes.data.filter((img) => img.enabled),
-              }));
-            })
-            .catch((err) =>
-              console.error(`Error fetching images for ${property.id}:`, err)
-            );
-        });
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+  const [propertyForm, setPropertyForm] = useState({
+    name: "",
+    address: "",
+    price: "",
+    codeInternal: "",
+    year: "",
+    idOwner: "",
+  });
+
+  const [imageForm, setImageForm] = useState({
+    idProperty: "",
+    file: "",
+    enabled: true,
+  });
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  useEffect(() => {
+    fetchProperties();
   }, []);
 
   const sliderSettings = {
@@ -59,6 +60,75 @@ const LandingPage: React.FC = () => {
     slidesToShow: 1,
     slidesToScroll: 1,
     arrows: false,
+  };
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get<Property[]>(
+        "http://localhost:5001/api/properties"
+      );
+      setProperties(res.data);
+
+      // Fetch images for each property
+      const imagesMap: Record<string, PropertyImage[]> = {};
+      for (const property of res.data) {
+        try {
+          const imgRes = await axios.get<PropertyImage[]>(
+            `http://localhost:5001/api/PropertyImages/property/${property.id}`
+          );
+          imagesMap[property.id] = imgRes.data;
+        } catch {
+          imagesMap[property.id] = [];
+        }
+      }
+      setPropertyImages(imagesMap);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePropertySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    axios
+      .post("http://localhost:5001/api/Properties", {
+        ...propertyForm,
+        price: Number(propertyForm.price),
+        year: Number(propertyForm.year),
+      })
+      .then(() => {
+        alert("Property created successfully");
+        setPropertyForm({
+          name: "",
+          address: "",
+          price: "",
+          codeInternal: "",
+          year: "",
+          idOwner: "",
+        });
+        setShowPropertyForm(false);
+        fetchProperties();
+      })
+      .catch((err) => alert("Error creating property: " + err.message));
+  };
+
+  const handleImageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    axios
+      .post("http://localhost:5001/api/PropertyImages", imageForm)
+      .then(() => {
+        alert("Property image added successfully");
+        setImageForm({
+          idProperty: "",
+          file: "",
+          enabled: true,
+        });
+        setShowImageForm(false);
+        fetchProperties(); // Refresh to include new images
+      })
+      .catch((err) => alert("Error adding image: " + err.message));
   };
 
   if (loading) {
@@ -89,35 +159,42 @@ const LandingPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {properties.map((property) => {
-              const propertyImages = images[property.id] || [];
+              const images = propertyImages[property.id] || [];
+              const firstImage = images.length > 0 ? images[0].file : null;
 
               return (
                 <div
                   key={property.id}
                   className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  {propertyImages.length > 0 ? (
-                    <Slider {...sliderSettings}>
-                      {propertyImages.map((img) => (
-                        <div key={img.id}>
-                          <img
-                            src={img.file}
-                            alt={property.name}
-                            className="w-full h-48 object-cover"
-                          />
-                        </div>
-                      ))}
-                    </Slider>
+                  {images.length > 0 ? (
+                    <div className="mb-3">
+                      <Slider {...sliderSettings}>
+                        {images.map((img) => (
+                          <div key={img.id}>
+                            <img
+                              src={img.file}
+                              alt={property.name}
+                              className="w-full h-48 object-cover"
+                            />
+                          </div>
+                        ))}
+                      </Slider>
+                    </div>
                   ) : (
                     <div className="h-48 bg-gray-200 flex items-center justify-center text-gray-400">
                       No Image
                     </div>
                   )}
-
                   <div className="p-4">
                     <h2 className="text-xl font-semibold text-gray-800">
                       {property.name}
                     </h2>
+                    {property.id && (
+                      <p className="text-gray-500 text-xs mb-2">
+                        <span className="font-semibold">ID:</span> {property.id}
+                      </p>
+                    )}
                     <p className="text-gray-600">{property.address}</p>
                     <p className="mt-2 text-gray-900 font-bold">
                       ${property.price.toLocaleString()}
@@ -136,9 +213,147 @@ const LandingPage: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* Action Buttons */}
+        <div className="mt-10 flex gap-4">
+          <button
+            onClick={() => setShowPropertyForm((prev) => !prev)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            ➕ Add Property
+          </button>
+          <button
+            onClick={() => setShowImageForm((prev) => !prev)}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            🖼 Add Property Image
+          </button>
+        </div>
+
+        {/* Property Form */}
+        {showPropertyForm && (
+          <form
+            onSubmit={handlePropertySubmit}
+            className="mt-6 bg-white shadow-md rounded-lg p-6 space-y-4"
+          >
+            <input
+              type="text"
+              placeholder="Name"
+              className="border p-2 w-full rounded"
+              value={propertyForm.name}
+              onChange={(e) =>
+                setPropertyForm({ ...propertyForm, name: e.target.value })
+              }
+              required
+            />
+            <input
+              type="text"
+              placeholder="Address"
+              className="border p-2 w-full rounded"
+              value={propertyForm.address}
+              onChange={(e) =>
+                setPropertyForm({ ...propertyForm, address: e.target.value })
+              }
+              required
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              className="border p-2 w-full rounded"
+              value={propertyForm.price}
+              onChange={(e) =>
+                setPropertyForm({ ...propertyForm, price: e.target.value })
+              }
+              required
+            />
+            <input
+              type="text"
+              placeholder="Code Internal"
+              className="border p-2 w-full rounded"
+              value={propertyForm.codeInternal}
+              onChange={(e) =>
+                setPropertyForm({
+                  ...propertyForm,
+                  codeInternal: e.target.value,
+                })
+              }
+            />
+            <input
+              type="number"
+              placeholder="Year"
+              className="border p-2 w-full rounded"
+              value={propertyForm.year}
+              onChange={(e) =>
+                setPropertyForm({ ...propertyForm, year: e.target.value })
+              }
+            />
+            <input
+              type="text"
+              placeholder="Owner ID"
+              className="border p-2 w-full rounded"
+              value={propertyForm.idOwner}
+              onChange={(e) =>
+                setPropertyForm({ ...propertyForm, idOwner: e.target.value })
+              }
+              required
+            />
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Save Property
+            </button>
+          </form>
+        )}
+
+        {/* Property Image Form */}
+        {showImageForm && (
+          <form
+            onSubmit={handleImageSubmit}
+            className="mt-6 bg-white shadow-md rounded-lg p-6 space-y-4"
+          >
+            <input
+              type="text"
+              placeholder="Property ID"
+              className="border p-2 w-full rounded"
+              value={imageForm.idProperty}
+              onChange={(e) =>
+                setImageForm({ ...imageForm, idProperty: e.target.value })
+              }
+              required
+            />
+            <input
+              type="text"
+              placeholder="File URL"
+              className="border p-2 w-full rounded"
+              value={imageForm.file}
+              onChange={(e) =>
+                setImageForm({ ...imageForm, file: e.target.value })
+              }
+              required
+            />
+            <select
+              className="border p-2 w-full rounded"
+              value={imageForm.enabled.toString()}
+              onChange={(e) =>
+                setImageForm({
+                  ...imageForm,
+                  enabled: e.target.value === "true",
+                })
+              }
+            >
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+            <button
+              type="submit"
+              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            >
+              Save Image
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
-};
-
-export default LandingPage;
+}

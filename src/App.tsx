@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import OwnersPage from "./pages/OwnersPage";
 
@@ -19,7 +19,7 @@ function App() {
       <Routes>
         <Route path="/properties" element={<LandingPage />} />
         <Route path="/owners" element={<OwnersPage />} />
-        <Route path="*" element={<div className="p-6">Page not found</div>} />
+        <Route path="*" element={<Navigate to="/properties" replace />} />
       </Routes>
     </div>
   );
