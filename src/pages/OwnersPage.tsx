@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-
-interface Owner {
-  id: string;
-  name: string;
-  address: string;
-  photo: string;
-  birthday: string;
-}
+import { Owner } from "../interfaces/IOwner";
+import { API_URI } from "../enums/enums";
 
 export default function OwnersPage() {
   const [owners, setOwners] = useState<Owner[]>([]);
@@ -27,7 +21,7 @@ export default function OwnersPage() {
 
   const fetchOwners = () => {
     axios
-      .get<Owner[]>("http://localhost:5001/api/Owners")
+      .get<Owner[]>(API_URI.docker + "/Owners")
       .then((res) => {
         setOwners(res.data);
         setLoading(false);
@@ -41,7 +35,7 @@ export default function OwnersPage() {
   const handleOwnerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5001/api/Owners", {
+      .post(API_URI.docker + "/Owners", {
         ...ownerForm,
         birthday: new Date(ownerForm.birthday).toISOString(),
       })

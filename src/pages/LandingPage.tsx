@@ -1,23 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Slider from "react-slick";
-
-interface Property {
-  id: string;
-  name: string;
-  address: string;
-  price: number;
-  codeInternal?: string;
-  year?: number;
-  idOwner: string;
-}
-
-interface PropertyImage {
-  id: string;
-  idProperty: string;
-  file: string;
-  enabled: boolean;
-}
+import { API_URI } from "../enums/enums";
+import { Property } from "../services/propertyService";
+import { PropertyImage } from "../interfaces/IPropertyImage";
 
 export default function LandingPage() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -65,9 +51,7 @@ export default function LandingPage() {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const res = await axios.get<Property[]>(
-        "http://localhost:5001/api/properties"
-      );
+      const res = await axios.get<Property[]>(API_URI.docker + "/properties");
       setProperties(res.data);
 
       // Fetch images for each property
@@ -75,7 +59,7 @@ export default function LandingPage() {
       for (const property of res.data) {
         try {
           const imgRes = await axios.get<PropertyImage[]>(
-            `http://localhost:5001/api/PropertyImages/property/${property.id}`
+            `${API_URI.docker}/PropertyImages/property/${property.id}`
           );
           imagesMap[property.id] = imgRes.data;
         } catch {
@@ -93,7 +77,7 @@ export default function LandingPage() {
   const handlePropertySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5001/api/Properties", {
+      .post(API_URI.docker + "/Properties", {
         ...propertyForm,
         price: Number(propertyForm.price),
         year: Number(propertyForm.year),
@@ -117,7 +101,7 @@ export default function LandingPage() {
   const handleImageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5001/api/PropertyImages", imageForm)
+      .post(API_URI.docker + "/PropertyImages", imageForm)
       .then(() => {
         alert("Property image added successfully");
         setImageForm({
